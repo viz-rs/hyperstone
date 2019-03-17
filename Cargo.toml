@@ -3,5 +3,11 @@ name = "hyperstone"
 version = "0.1.0"
 authors = ["Fangdun Cai <cfddream@gmail.com>"]
 edition = "2018"
+description = "Hyperstone"
+repository = "https://github.com/trek-rs/hyperstone"
+documentation = "https://github.com/trek-rs/hyperstone/"
+readme = "README.md"
+keywords = ["hyperstone"]
+license = "MIT/Apache-2.0"
 
 [dependencies]
