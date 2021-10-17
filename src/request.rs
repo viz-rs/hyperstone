@@ -11,17 +11,25 @@ pub trait RequestExt {
 
     fn mime(&self) -> Option<mime::Mime>;
 
-    fn header<T: std::str::FromStr>(&self, key: impl AsRef<str>) -> Option<T>;
-
-    async fn bytes<B>(stream: B) -> anyhow::Result<bytes::Bytes>
+    fn header<T>(&self, key: impl AsRef<str>) -> Option<T>
     where
-        B: Send + Stream<Item = Result<bytes::Bytes, Error>> + Unpin;
+        T: std::str::FromStr;
 
-    async fn json<T: serde::de::DeserializeOwned>(self) -> anyhow::Result<T>;
+    async fn bytes<T>(stream: T) -> anyhow::Result<bytes::Bytes>
+    where
+        T: Send + Stream<Item = Result<bytes::Bytes, Error>> + Unpin;
 
-    async fn form<T: serde::de::DeserializeOwned>(self) -> anyhow::Result<T>;
+    async fn json<T>(self) -> anyhow::Result<T>
+    where
+        T: serde::de::DeserializeOwned;
 
-    fn query<T: serde::de::DeserializeOwned>(self) -> anyhow::Result<T>;
+    async fn form<T>(self) -> anyhow::Result<T>
+    where
+        T: serde::de::DeserializeOwned;
+
+    fn query<T>(self) -> anyhow::Result<T>
+    where
+        T: serde::de::DeserializeOwned;
 
     fn multipart(self) -> anyhow::Result<FormData<Body>>;
 }
@@ -44,16 +52,19 @@ impl RequestExt for Request<Body> {
         self.header(header::CONTENT_TYPE)
     }
 
-    fn header<T: std::str::FromStr>(&self, key: impl AsRef<str>) -> Option<T> {
+    fn header<T>(&self, key: impl AsRef<str>) -> Option<T>
+    where
+        T: std::str::FromStr,
+    {
         self.headers()
             .get(key.as_ref())
             .and_then(|v| v.to_str().ok())
             .and_then(|v| v.parse::<T>().ok())
     }
 
-    async fn bytes<B>(mut stream: B) -> anyhow::Result<bytes::Bytes>
+    async fn bytes<T>(mut stream: T) -> anyhow::Result<bytes::Bytes>
     where
-        B: Send + Stream<Item = Result<bytes::Bytes, Error>> + Unpin,
+        T: Send + Stream<Item = Result<bytes::Bytes, Error>> + Unpin,
     {
         let mut body = bytes::BytesMut::with_capacity(8192);
 
@@ -65,7 +76,10 @@ impl RequestExt for Request<Body> {
         Ok(body.freeze())
     }
 
-    async fn json<T: serde::de::DeserializeOwned>(self) -> anyhow::Result<T> {
+    async fn json<T>(self) -> anyhow::Result<T>
+    where
+        T: serde::de::DeserializeOwned,
+    {
         let is_json = self
             .mime()
             .filter(|m| {
@@ -79,7 +93,10 @@ impl RequestExt for Request<Body> {
         serde_json::from_slice(&Self::bytes(self.into_body()).await?).map_err(anyhow::Error::new)
     }
 
-    async fn form<T: serde::de::DeserializeOwned>(self) -> anyhow::Result<T> {
+    async fn form<T>(self) -> anyhow::Result<T>
+    where
+        T: serde::de::DeserializeOwned,
+    {
         let is_form = self
             .mime()
             .filter(|m| m.type_() == mime::APPLICATION && m.subtype() == mime::WWW_FORM_URLENCODED)
@@ -91,7 +108,10 @@ impl RequestExt for Request<Body> {
             .map_err(anyhow::Error::new)
     }
 
-    fn query<T: serde::de::DeserializeOwned>(self) -> anyhow::Result<T> {
+    fn query<T>(self) -> anyhow::Result<T>
+    where
+        T: serde::de::DeserializeOwned,
+    {
         serde_urlencoded::from_str(self.query_str()).map_err(anyhow::Error::new)
     }
 
