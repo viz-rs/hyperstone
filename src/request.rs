@@ -1,6 +1,4 @@
 use crate::{async_trait, header, Body, Error, Request};
-use bytes::Buf;
-use form_data::{FormData, Limits};
 use futures_util::stream::{Stream, StreamExt};
 
 #[async_trait]
@@ -31,7 +29,7 @@ pub trait RequestExt {
     where
         T: serde::de::DeserializeOwned;
 
-    fn multipart(self) -> anyhow::Result<FormData<Body>>;
+    fn multipart(self) -> anyhow::Result<form_data::FormData<Body>>;
 }
 
 #[async_trait]
@@ -104,7 +102,7 @@ impl RequestExt for Request<Body> {
 
         anyhow::ensure!(is_form, "Content-Type is not Form");
 
-        serde_urlencoded::from_reader(Self::bytes(self.into_body()).await?.reader())
+        serde_urlencoded::from_reader(bytes::Buf::reader(Self::bytes(self.into_body()).await?))
             .map_err(anyhow::Error::new)
     }
 
@@ -115,7 +113,7 @@ impl RequestExt for Request<Body> {
         serde_urlencoded::from_str(self.query_str()).map_err(anyhow::Error::new)
     }
 
-    fn multipart(self) -> anyhow::Result<FormData<Body>> {
+    fn multipart(self) -> anyhow::Result<form_data::FormData<Body>> {
         let m = self
             .mime()
             .filter(|m| m.type_() == mime::APPLICATION && m.subtype() == mime::MULTIPART)
@@ -125,10 +123,10 @@ impl RequestExt for Request<Body> {
             .get_param(mime::BOUNDARY)
             .ok_or_else(|| anyhow::anyhow!("Missing Boundary"))?;
 
-        Ok(FormData::with_limits(
+        Ok(form_data::FormData::with_limits(
             self.into_body(),
             boundary.as_str(),
-            Limits::default(),
+            form_data::Limits::default(),
         ))
     }
 }
