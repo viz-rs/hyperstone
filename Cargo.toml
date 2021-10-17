@@ -3,11 +3,11 @@ name = "hyperstone"
 version = "0.0.1"
 authors = ["Fangdun Tsai <cfddream@gmail.com>"]
 edition = "2018"
-description = "Hyperstone"
+description = "A mystical, carved stone that boosts the fervor of the holder."
 repository = "https://github.com/viz-rs/hyperstone"
 documentation = "https://github.com/viz-rs/hyperstone/"
 readme = "README.md"
-keywords = ["hyperstone"]
+keywords = ["http", "web", "hyper"]
 license = "MIT/Apache-2.0"
 
 [features]

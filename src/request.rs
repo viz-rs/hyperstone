@@ -78,7 +78,7 @@ impl RequestExt for Request<Body> {
     where
         T: serde::de::DeserializeOwned,
     {
-        let is_json = self
+        let valid = self
             .mime()
             .filter(|m| {
                 m.type_() == mime::APPLICATION
@@ -86,7 +86,7 @@ impl RequestExt for Request<Body> {
             })
             .is_some();
 
-        anyhow::ensure!(is_json, "Content-Type is not JSON");
+        anyhow::ensure!(valid, "Content-Type is not JSON");
 
         serde_json::from_slice(&Self::bytes(self.into_body()).await?).map_err(anyhow::Error::new)
     }
@@ -96,12 +96,12 @@ impl RequestExt for Request<Body> {
     where
         T: serde::de::DeserializeOwned,
     {
-        let is_form = self
+        let valid = self
             .mime()
             .filter(|m| m.type_() == mime::APPLICATION && m.subtype() == mime::WWW_FORM_URLENCODED)
             .is_some();
 
-        anyhow::ensure!(is_form, "Content-Type is not Form");
+        anyhow::ensure!(valid, "Content-Type is not Form");
 
         serde_urlencoded::from_reader(bytes::Buf::reader(Self::bytes(self.into_body()).await?))
             .map_err(anyhow::Error::new)
@@ -122,13 +122,13 @@ impl RequestExt for Request<Body> {
             .filter(|m| m.type_() == mime::APPLICATION && m.subtype() == mime::MULTIPART)
             .ok_or_else(|| anyhow::anyhow!("Content-Type is not Multipart"))?;
 
-        let boundary = m
+        let b = m
             .get_param(mime::BOUNDARY)
             .ok_or_else(|| anyhow::anyhow!("Missing Boundary"))?;
 
         Ok(form_data::FormData::with_limits(
             self.into_body(),
-            boundary.as_str(),
+            b.as_str(),
             form_data::Limits::default(),
         ))
     }
