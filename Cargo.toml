@@ -10,14 +10,24 @@ readme = "README.md"
 keywords = ["hyperstone"]
 license = "MIT/Apache-2.0"
 
+[features]
+default = ["query", "json", "form", "multipart"]
+
+json = ["serde", "serde_json"]
+form = ["serde", "serde_urlencoded"]
+query = ["serde", "serde_urlencoded"]
+multipart = ["form-data"]
+
 [dependencies]
 anyhow = "1.0.44"
 async-trait = "0.1.51"
 bytes = "1.1.0"
-form-data = "0.2.6"
 futures-util = "0.3.17"
 hyper = { version = "0.14.13", features = ["stream"] }
+
 mime = "0.3.16"
-serde = "1.0.130"
-serde_json = "1.0.68"
-serde_urlencoded = "0.7.0"
+
+form-data = { version = "0.2.6", optional = true }
+serde = { version = "1.0.130", optional = true }
+serde_json = { version = "1.0.68", optional = true }
+serde_urlencoded = { version = "0.7.0", optional = true }

@@ -17,29 +17,29 @@ pub trait RequestExt {
     where
         T: Send + Stream<Item = Result<bytes::Bytes, Error>> + Unpin;
 
+    #[cfg(feature = "json")]
     async fn json<T>(self) -> anyhow::Result<T>
     where
         T: serde::de::DeserializeOwned;
 
+    #[cfg(feature = "form")]
     async fn form<T>(self) -> anyhow::Result<T>
     where
         T: serde::de::DeserializeOwned;
 
+    #[cfg(feature = "query")]
     fn query<T>(self) -> anyhow::Result<T>
     where
         T: serde::de::DeserializeOwned;
 
+    #[cfg(feature = "multipart")]
     fn multipart(self) -> anyhow::Result<form_data::FormData<Body>>;
 }
 
 #[async_trait]
 impl RequestExt for Request<Body> {
     fn query_str(&self) -> &str {
-        if let Some(query) = self.uri().query().as_ref() {
-            query
-        } else {
-            ""
-        }
+        self.uri().query().unwrap_or_default().as_ref()
     }
 
     fn size(&self) -> Option<u64> {
@@ -67,13 +67,13 @@ impl RequestExt for Request<Body> {
         let mut body = bytes::BytesMut::with_capacity(8192);
 
         while let Some(item) = stream.next().await {
-            let chunk = item?;
-            body.extend_from_slice(&chunk);
+            body.extend_from_slice(&item?);
         }
 
         Ok(body.freeze())
     }
 
+    #[cfg(feature = "json")]
     async fn json<T>(self) -> anyhow::Result<T>
     where
         T: serde::de::DeserializeOwned,
@@ -91,6 +91,7 @@ impl RequestExt for Request<Body> {
         serde_json::from_slice(&Self::bytes(self.into_body()).await?).map_err(anyhow::Error::new)
     }
 
+    #[cfg(feature = "form")]
     async fn form<T>(self) -> anyhow::Result<T>
     where
         T: serde::de::DeserializeOwned,
@@ -106,6 +107,7 @@ impl RequestExt for Request<Body> {
             .map_err(anyhow::Error::new)
     }
 
+    #[cfg(feature = "query")]
     fn query<T>(self) -> anyhow::Result<T>
     where
         T: serde::de::DeserializeOwned,
@@ -113,6 +115,7 @@ impl RequestExt for Request<Body> {
         serde_urlencoded::from_str(self.query_str()).map_err(anyhow::Error::new)
     }
 
+    #[cfg(feature = "multipart")]
     fn multipart(self) -> anyhow::Result<form_data::FormData<Body>> {
         let m = self
             .mime()
