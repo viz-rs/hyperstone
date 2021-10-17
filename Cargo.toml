@@ -1,13 +1,23 @@
 [package]
 name = "hyperstone"
 version = "0.0.1"
-authors = ["Fangdun Cai <cfddream@gmail.com>"]
+authors = ["Fangdun Tsai <cfddream@gmail.com>"]
 edition = "2018"
 description = "Hyperstone"
-repository = "https://github.com/trek-rs/hyperstone"
-documentation = "https://github.com/trek-rs/hyperstone/"
+repository = "https://github.com/viz-rs/hyperstone"
+documentation = "https://github.com/viz-rs/hyperstone/"
 readme = "README.md"
 keywords = ["hyperstone"]
 license = "MIT/Apache-2.0"
 
 [dependencies]
+anyhow = "1.0.44"
+async-trait = "0.1.51"
+bytes = "1.1.0"
+form-data = "0.2.6"
+futures-util = "0.3.17"
+hyper = { version = "0.14.13", features = ["stream"] }
+mime = "0.3.16"
+serde = "1.0.130"
+serde_json = "1.0.68"
+serde_urlencoded = "0.7.0"
