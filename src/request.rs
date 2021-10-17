@@ -118,6 +118,7 @@ impl RequestExt for Request<Body> {
     fn multipart(self) -> anyhow::Result<FormData<Body>> {
         let m = self
             .mime()
+            .filter(|m| m.type_() == mime::APPLICATION && m.subtype() == mime::MULTIPART)
             .ok_or_else(|| anyhow::anyhow!("Content-Type is not Multipart"))?;
 
         let boundary = m
