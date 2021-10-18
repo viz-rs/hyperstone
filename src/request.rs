@@ -28,12 +28,18 @@ pub trait RequestExt {
         T: serde::de::DeserializeOwned;
 
     #[cfg(feature = "query")]
-    fn query<T>(self) -> anyhow::Result<T>
+    fn query<T>(&self) -> anyhow::Result<T>
     where
         T: serde::de::DeserializeOwned;
 
     #[cfg(feature = "multipart")]
     fn multipart(self) -> anyhow::Result<form_data::FormData<Body>>;
+
+    #[cfg(feature = "cookie")]
+    fn cookie_jar(&mut self) -> anyhow::Result<cookie::CookieJar>;
+
+    #[cfg(feature = "cookie")]
+    fn cookie(&mut self, name: impl AsRef<str>) -> Option<cookie::Cookie<'static>>;
 }
 
 #[async_trait]
@@ -88,7 +94,7 @@ impl RequestExt for Request<Body> {
 
         anyhow::ensure!(valid, "Content-Type is not JSON");
 
-        serde_json::from_slice(&Self::bytes(self.into_body()).await?).map_err(anyhow::Error::new)
+        serde_json::from_slice(&Self::bytes(self.into_body()).await?).map_err(Into::into)
     }
 
     #[cfg(feature = "form")]
@@ -104,15 +110,15 @@ impl RequestExt for Request<Body> {
         anyhow::ensure!(valid, "Content-Type is not Form");
 
         serde_urlencoded::from_reader(bytes::Buf::reader(Self::bytes(self.into_body()).await?))
-            .map_err(anyhow::Error::new)
+            .map_err(Into::into)
     }
 
     #[cfg(feature = "query")]
-    fn query<T>(self) -> anyhow::Result<T>
+    fn query<T>(&self) -> anyhow::Result<T>
     where
         T: serde::de::DeserializeOwned,
     {
-        serde_urlencoded::from_str(self.query_str()).map_err(anyhow::Error::new)
+        serde_urlencoded::from_str(self.query_str()).map_err(Into::into)
     }
 
     #[cfg(feature = "multipart")]
@@ -131,5 +137,71 @@ impl RequestExt for Request<Body> {
             b.as_str(),
             form_data::Limits::default(),
         ))
+    }
+
+    #[cfg(feature = "cookie")]
+    fn cookie_jar(&mut self) -> anyhow::Result<cookie::CookieJar> {
+        if let Some(jar) = self.extensions().get::<cookie::CookieJar>().cloned() {
+            return Ok(jar);
+        }
+
+        let mut jar = cookie::CookieJar::new();
+
+        if let Some::<header::HeaderValue>(cookie) = self.header(header::COOKIE) {
+            for pair in cookie.to_str().map_err(anyhow::Error::new)?.split(';') {
+                jar.add_original(
+                    cookie::Cookie::parse_encoded(pair.trim().to_string())
+                        .map_err(anyhow::Error::new)?,
+                )
+            }
+        }
+
+        self.extensions_mut()
+            .insert::<cookie::CookieJar>(jar.clone());
+
+        Ok(jar)
+    }
+
+    #[cfg(feature = "cookie")]
+    fn cookie(&mut self, name: impl AsRef<str>) -> Option<cookie::Cookie<'static>> {
+        self.cookie_jar()
+            .ok()
+            .and_then(|jar| jar.get(name.as_ref()).cloned())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{header, Body, Method, Request, RequestExt};
+    use anyhow::Result;
+    use serde::Deserialize;
+
+    #[test]
+    fn request() -> Result<()> {
+        let mut req = Request::builder()
+            .method(Method::GET)
+            .uri("/?offset=10&limit=10")
+            .body(Into::<Body>::into(""))
+            .unwrap();
+
+        #[derive(Debug, Deserialize)]
+        struct Query {
+            offset: usize,
+            limit: usize,
+        }
+
+        req.headers_mut().insert(header::COOKIE, {
+            let cookie = cookie::Cookie::new("viz.id", "123 321");
+            header::HeaderValue::from_str(&cookie.encoded().to_string()).unwrap()
+        });
+
+        let size = req.size();
+        let mime = req.mime();
+        let cookie = req.cookie("viz.id");
+        let query = req.query::<Query>()?;
+
+        dbg!(size, mime, cookie, query);
+
+        Ok(())
     }
 }
