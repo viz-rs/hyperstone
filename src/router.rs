@@ -6,7 +6,7 @@ pub struct Router<T> {
     path: String,
     name: Option<String>,
     tree: path_tree::PathTree<T>,
-    routes: Option<Vec<(String, usize, T)>>,
+    routes: Option<Vec<(Method, String, T)>>,
 }
 
 impl<T: Clone> Router<T> {
@@ -40,11 +40,9 @@ impl<T: Clone> Router<T> {
     }
 
     fn on(mut self, method: Method, path: impl AsRef<str>, handler: T) -> Self {
-        let m = method.as_str();
-        let i = m.len();
         self.routes.get_or_insert_with(Vec::new).push((
-            m.to_owned() + &join_paths(&self.path, path.as_ref()),
-            i,
+            method,
+            join_paths(&self.path, path.as_ref()),
             handler,
         ));
         self
@@ -96,7 +94,7 @@ impl<T: Clone> Router<T> {
                 .iter()
                 .cloned()
                 .map(|mut t| {
-                    t.0 = t.0[..t.1].to_owned() + &join_paths(&self.path, &t.0[t.1..]);
+                    t.1 = join_paths(&self.path, &t.1);
                     t
                 })
                 .collect::<Vec<_>>();
