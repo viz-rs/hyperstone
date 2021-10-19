@@ -1,4 +1,4 @@
-use crate::{async_trait, header, Body, Error, Request};
+use crate::{anyhow::Result, async_trait, header, Body, Error, Request};
 use futures_util::stream::{Stream, StreamExt};
 
 #[async_trait]
@@ -13,30 +13,30 @@ pub trait RequestExt {
     where
         T: std::str::FromStr;
 
-    async fn bytes<T>(stream: T) -> anyhow::Result<bytes::Bytes>
+    async fn bytes<T>(stream: T) -> Result<bytes::Bytes>
     where
         T: Send + Stream<Item = Result<bytes::Bytes, Error>> + Unpin;
 
     #[cfg(feature = "json")]
-    async fn json<T>(self) -> anyhow::Result<T>
+    async fn json<T>(self) -> Result<T>
     where
         T: serde::de::DeserializeOwned;
 
     #[cfg(feature = "form")]
-    async fn form<T>(self) -> anyhow::Result<T>
+    async fn form<T>(self) -> Result<T>
     where
         T: serde::de::DeserializeOwned;
 
     #[cfg(feature = "query")]
-    fn query<T>(&self) -> anyhow::Result<T>
+    fn query<T>(&self) -> Result<T>
     where
         T: serde::de::DeserializeOwned;
 
     #[cfg(feature = "multipart")]
-    fn multipart(self) -> anyhow::Result<form_data::FormData<Body>>;
+    fn multipart(self) -> Result<form_data::FormData<Body>>;
 
     #[cfg(feature = "cookie")]
-    fn cookie_jar(&mut self) -> anyhow::Result<cookie::CookieJar>;
+    fn cookie_jar(&mut self) -> Result<cookie::CookieJar>;
 
     #[cfg(feature = "cookie")]
     fn cookie(&mut self, name: impl AsRef<str>) -> Option<cookie::Cookie<'static>>;
@@ -66,7 +66,7 @@ impl RequestExt for Request<Body> {
             .and_then(|v| v.parse::<T>().ok())
     }
 
-    async fn bytes<T>(mut stream: T) -> anyhow::Result<bytes::Bytes>
+    async fn bytes<T>(mut stream: T) -> Result<bytes::Bytes>
     where
         T: Send + Stream<Item = Result<bytes::Bytes, Error>> + Unpin,
     {
@@ -80,7 +80,7 @@ impl RequestExt for Request<Body> {
     }
 
     #[cfg(feature = "json")]
-    async fn json<T>(self) -> anyhow::Result<T>
+    async fn json<T>(self) -> Result<T>
     where
         T: serde::de::DeserializeOwned,
     {
@@ -98,7 +98,7 @@ impl RequestExt for Request<Body> {
     }
 
     #[cfg(feature = "form")]
-    async fn form<T>(self) -> anyhow::Result<T>
+    async fn form<T>(self) -> Result<T>
     where
         T: serde::de::DeserializeOwned,
     {
@@ -114,7 +114,7 @@ impl RequestExt for Request<Body> {
     }
 
     #[cfg(feature = "query")]
-    fn query<T>(&self) -> anyhow::Result<T>
+    fn query<T>(&self) -> Result<T>
     where
         T: serde::de::DeserializeOwned,
     {
@@ -122,7 +122,7 @@ impl RequestExt for Request<Body> {
     }
 
     #[cfg(feature = "multipart")]
-    fn multipart(self) -> anyhow::Result<form_data::FormData<Body>> {
+    fn multipart(self) -> Result<form_data::FormData<Body>> {
         let m = self
             .content_type()
             .filter(|m| m.type_() == mime::APPLICATION && m.subtype() == mime::MULTIPART)
@@ -140,7 +140,7 @@ impl RequestExt for Request<Body> {
     }
 
     #[cfg(feature = "cookie")]
-    fn cookie_jar(&mut self) -> anyhow::Result<cookie::CookieJar> {
+    fn cookie_jar(&mut self) -> Result<cookie::CookieJar> {
         if let Some(jar) = self.extensions().get::<cookie::CookieJar>().cloned() {
             return Ok(jar);
         }
