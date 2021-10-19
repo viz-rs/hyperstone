@@ -3,11 +3,11 @@ use futures_util::stream::{Stream, StreamExt};
 
 #[async_trait]
 pub trait RequestExt {
-    fn query_str(&self) -> &str;
+    fn query_string(&self) -> &str;
 
-    fn size(&self) -> Option<u64>;
+    fn content_length(&self) -> Option<u64>;
 
-    fn mime(&self) -> Option<mime::Mime>;
+    fn content_type(&self) -> Option<mime::Mime>;
 
     fn header<T>(&self, key: impl AsRef<str>) -> Option<T>
     where
@@ -44,15 +44,15 @@ pub trait RequestExt {
 
 #[async_trait]
 impl RequestExt for Request<Body> {
-    fn query_str(&self) -> &str {
+    fn query_string(&self) -> &str {
         self.uri().query().unwrap_or_default().as_ref()
     }
 
-    fn size(&self) -> Option<u64> {
+    fn content_length(&self) -> Option<u64> {
         self.header(header::CONTENT_LENGTH)
     }
 
-    fn mime(&self) -> Option<mime::Mime> {
+    fn content_type(&self) -> Option<mime::Mime> {
         self.header(header::CONTENT_TYPE)
     }
 
@@ -85,7 +85,7 @@ impl RequestExt for Request<Body> {
         T: serde::de::DeserializeOwned,
     {
         let valid = self
-            .mime()
+            .content_type()
             .filter(|m| {
                 m.type_() == mime::APPLICATION
                     && (m.subtype() == mime::JSON || m.suffix() == Some(mime::JSON))
@@ -103,7 +103,7 @@ impl RequestExt for Request<Body> {
         T: serde::de::DeserializeOwned,
     {
         let valid = self
-            .mime()
+            .content_type()
             .filter(|m| m.type_() == mime::APPLICATION && m.subtype() == mime::WWW_FORM_URLENCODED)
             .is_some();
 
@@ -118,13 +118,13 @@ impl RequestExt for Request<Body> {
     where
         T: serde::de::DeserializeOwned,
     {
-        serde_urlencoded::from_str(self.query_str()).map_err(Into::into)
+        serde_urlencoded::from_str(self.query_string()).map_err(Into::into)
     }
 
     #[cfg(feature = "multipart")]
     fn multipart(self) -> anyhow::Result<form_data::FormData<Body>> {
         let m = self
-            .mime()
+            .content_type()
             .filter(|m| m.type_() == mime::APPLICATION && m.subtype() == mime::MULTIPART)
             .ok_or_else(|| anyhow::anyhow!("Content-Type is not Multipart"))?;
 
@@ -195,8 +195,8 @@ mod tests {
             header::HeaderValue::from_str(&cookie.encoded().to_string()).unwrap()
         });
 
-        let size = req.size();
-        let mime = req.mime();
+        let size = req.content_length();
+        let mime = req.content_type();
         let cookie = req.cookie("viz.id");
         let query = req.query::<Query>()?;
 
