@@ -46,3 +46,29 @@ pub trait ResponseExt {
 }
 
 impl ResponseExt for Response<Body> {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn response() {
+        let res = Response::text("hello world");
+        assert_eq!(
+            res.headers().get(CONTENT_TYPE),
+            Some(&HeaderValue::from_static(mime::TEXT_PLAIN.as_ref()))
+        );
+
+        let res = Response::html("hello world");
+        assert_eq!(
+            res.headers().get(CONTENT_TYPE),
+            Some(&HeaderValue::from_static(mime::TEXT_HTML.as_ref()))
+        );
+
+        let res = Response::json("{}");
+        assert_eq!(
+            res.headers().get(CONTENT_TYPE),
+            Some(&HeaderValue::from_static(mime::APPLICATION_JSON.as_ref()))
+        );
+    }
+}
