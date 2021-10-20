@@ -1,6 +1,6 @@
 use crate::{
-    anyhow::{Error, Result},
-    header::{HeaderValue, CONTENT_LOCATION, CONTENT_TYPE, LOCATION},
+    anyhow::Result,
+    header::{self, HeaderValue},
     Body, Response, StatusCode,
 };
 
@@ -23,14 +23,14 @@ pub trait ResponseExt {
     {
         serde_json::to_vec(&data)
             .map(|v| Self::with(v, mime::APPLICATION_JSON.as_ref()))
-            .map_err(Error::new)
+            .map_err(Into::into)
     }
 
     /// Responds body with `Content-Type`
     fn with(data: impl Into<Body>, ct: &'static str) -> Response<Body> {
         let mut res = Response::new(data.into());
         res.headers_mut()
-            .insert(CONTENT_TYPE, HeaderValue::from_static(ct));
+            .insert(header::CONTENT_TYPE, HeaderValue::from_static(ct));
         res
     }
 
@@ -38,7 +38,7 @@ pub trait ResponseExt {
     fn location(location: &'static str) -> Response<Body> {
         let mut res = Response::default();
         res.headers_mut()
-            .insert(CONTENT_LOCATION, HeaderValue::from_static(location));
+            .insert(header::CONTENT_LOCATION, HeaderValue::from_static(location));
         res
     }
 
@@ -47,12 +47,30 @@ pub trait ResponseExt {
         let mut res = Response::default();
         *res.status_mut() = status;
         res.headers_mut()
-            .insert(LOCATION, HeaderValue::from_static(location));
+            .insert(header::LOCATION, HeaderValue::from_static(location));
         res
     }
+
+    #[cfg(feature = "cookie")]
+    fn cookie_jar(&self) -> &cookie::CookieJar;
+
+    #[cfg(feature = "cookie")]
+    fn set_cookie(&mut self, cookie: cookie::Cookie<'_>) -> Result<bool>;
 }
 
-impl ResponseExt for Response<Body> {}
+impl ResponseExt for Response<Body> {
+    #[cfg(feature = "cookie")]
+    fn cookie_jar(&self) -> &cookie::CookieJar {
+        todo!()
+    }
+
+    #[cfg(feature = "cookie")]
+    fn set_cookie(&mut self, cookie: cookie::Cookie<'_>) -> Result<bool> {
+        HeaderValue::from_str(&cookie.encoded().to_string())
+            .map(|v| self.headers_mut().append(header::SET_COOKIE, v))
+            .map_err(Into::into)
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -62,19 +80,19 @@ mod tests {
     fn response() -> Result<()> {
         let res = Response::text("hello world");
         assert_eq!(
-            res.headers().get(CONTENT_TYPE),
+            res.headers().get(header::CONTENT_TYPE),
             Some(&HeaderValue::from_static(mime::TEXT_PLAIN.as_ref()))
         );
 
         let res = Response::html("hello world");
         assert_eq!(
-            res.headers().get(CONTENT_TYPE),
+            res.headers().get(header::CONTENT_TYPE),
             Some(&HeaderValue::from_static(mime::TEXT_HTML.as_ref()))
         );
 
         let res = Response::json(0)?;
         assert_eq!(
-            res.headers().get(CONTENT_TYPE),
+            res.headers().get(header::CONTENT_TYPE),
             Some(&HeaderValue::from_static(mime::APPLICATION_JSON.as_ref()))
         );
 
