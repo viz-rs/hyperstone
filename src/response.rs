@@ -1,4 +1,5 @@
 use crate::{
+    anyhow::{Error, Result},
     header::{HeaderValue, CONTENT_LOCATION, CONTENT_TYPE, LOCATION},
     Body, Response, StatusCode,
 };
@@ -14,9 +15,15 @@ pub trait ResponseExt {
         Self::with(data, mime::TEXT_HTML.as_ref())
     }
 
+    #[cfg(feature = "json")]
     /// Responds JSON
-    fn json(data: impl Into<Body>) -> Response<Body> {
-        Self::with(data, mime::APPLICATION_JSON.as_ref())
+    fn json<T>(data: T) -> Result<Response<Body>>
+    where
+        T: serde::Serialize,
+    {
+        serde_json::to_vec(&data)
+            .map(|v| Self::with(v, mime::APPLICATION_JSON.as_ref()))
+            .map_err(Error::new)
     }
 
     /// Responds body with `Content-Type`
@@ -52,7 +59,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn response() {
+    fn response() -> Result<()> {
         let res = Response::text("hello world");
         assert_eq!(
             res.headers().get(CONTENT_TYPE),
@@ -65,10 +72,12 @@ mod tests {
             Some(&HeaderValue::from_static(mime::TEXT_HTML.as_ref()))
         );
 
-        let res = Response::json("{}");
+        let res = Response::json(0)?;
         assert_eq!(
             res.headers().get(CONTENT_TYPE),
             Some(&HeaderValue::from_static(mime::APPLICATION_JSON.as_ref()))
         );
+
+        Ok(())
     }
 }
