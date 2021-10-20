@@ -15,7 +15,7 @@ pub trait RequestExt {
 
     async fn bytes<T>(stream: T) -> Result<bytes::Bytes>
     where
-        T: Send + Stream<Item = Result<bytes::Bytes, Error>> + Unpin;
+        T: Send + Unpin + Stream<Item = Result<bytes::Bytes, Error>>;
 
     #[cfg(feature = "json")]
     async fn json<T>(self) -> Result<T>
@@ -68,7 +68,7 @@ impl RequestExt for Request<Body> {
 
     async fn bytes<T>(mut stream: T) -> Result<bytes::Bytes>
     where
-        T: Send + Stream<Item = Result<bytes::Bytes, Error>> + Unpin,
+        T: Send + Unpin + Stream<Item = Result<bytes::Bytes, Error>>,
     {
         let mut body = bytes::BytesMut::with_capacity(8192);
 
