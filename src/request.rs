@@ -40,6 +40,12 @@ pub trait RequestExt {
 
     #[cfg(feature = "cookie")]
     fn cookie(&mut self, name: impl AsRef<str>) -> Option<cookie::Cookie<'static>>;
+
+    #[cfg(feature = "ws")]
+    fn ws() -> Result<()>;
+  
+    #[cfg(feature = "sse")]
+    fn sse() -> Result<()>;
 }
 
 #[async_trait]
@@ -167,6 +173,16 @@ impl RequestExt for Request<Body> {
         self.cookie_jar()
             .ok()
             .and_then(|jar| jar.get(name.as_ref()).cloned())
+    }
+
+    #[cfg(feature = "ws")]
+    fn ws() -> Result<()> {
+        todo!()
+    }
+  
+    #[cfg(feature = "sse")]
+    fn sse() -> Result<()> {
+        todo!()
     }
 }
 
