@@ -43,7 +43,7 @@ pub trait RequestExt {
 
     #[cfg(feature = "ws")]
     fn ws() -> Result<()>;
-  
+
     #[cfg(feature = "sse")]
     fn sse() -> Result<()>;
 }
@@ -179,7 +179,7 @@ impl RequestExt for Request<Body> {
     fn ws() -> Result<()> {
         todo!()
     }
-  
+
     #[cfg(feature = "sse")]
     fn sse() -> Result<()> {
         todo!()
