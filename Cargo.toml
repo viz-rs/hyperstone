@@ -29,7 +29,7 @@ http2 = ["hyper/http2"]
 [dependencies]
 anyhow = "1.0.45"
 async-trait = "0.1.51"
-path-tree = "0.2.1"
+path-tree = "0.2.2"
 futures-util = "0.3.17"
 
 hyper = { version = "0.14.14", features = ["server", "stream"] }
