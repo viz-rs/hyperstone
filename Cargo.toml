@@ -42,7 +42,7 @@ serde_json = { version = "1.0.70", optional = true }
 serde_urlencoded = { version = "0.7.0", optional = true }
 cookie = { version = "0.15.1", features = ["percent-encode"], optional = true }
 
-tokio-tungstenite = { version = "0.15.0", optional = true }
+tokio-tungstenite = { version = "0.16.0", optional = true }
 
 tower-service = "0.3.1"
 tower-layer = "0.3.1"
