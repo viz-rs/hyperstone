@@ -28,7 +28,7 @@ http2 = ["hyper/http2"]
 
 [dependencies]
 anyhow = "1.0.47"
-async-trait = "0.1.51"
+async-trait = "0.1.53"
 path-tree = "0.2.2"
 futures-util = "0.3.17"
 
