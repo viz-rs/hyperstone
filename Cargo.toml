@@ -52,4 +52,4 @@ tokio = { version = "1.14", default-features = false, features = ["net"], option
 
 [dev-dependencies]
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
-tracing-subscriber = "0.3.1"
+tracing-subscriber = "0.3.11"
