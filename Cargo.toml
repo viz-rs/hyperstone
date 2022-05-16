@@ -46,7 +46,7 @@ tokio-tungstenite = { version = "0.16.0", optional = true }
 
 tower-service = "0.3.1"
 tower-layer = "0.3.1"
-tower-http = { version = "0.1.2", features = ["auth", "trace"] }
+tower-http = { version = "0.3.3", features = ["auth", "trace"] }
 
 tokio = { version = "1.14", default-features = false, features = ["net"], optional = true }
 
